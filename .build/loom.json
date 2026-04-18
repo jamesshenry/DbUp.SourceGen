@@ -1,0 +1,20 @@
+{
+  "$schema": "./loom.schema.json",
+  "workspace": {
+    "solution": "DbUp.SourceGen.slnx",
+    "artifactsPath": ".artifacts",
+    "cleanDirectories": [],
+    "enableNugetUpload": false,
+    "enableGithubRelease": false,
+    "enableVelopackRelease": false
+  },
+  "artifacts": {
+    "DbUp.SourceGen": {
+      "project": "src\\DbUp.SourceGen\\DbUp.SourceGen.csproj",
+      "type": "Nuget"
+    }
+  },
+  "global": {
+    "target": "Publish"
+  }
+}

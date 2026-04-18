@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "loom.build": {
+      "version": "0.4.2",
+      "commands": [
+        "loom"
+      ],
+      "rollForward": false
+    },
+    "minver-cli": {
+      "version": "7.0.0",
+      "commands": [
+        "minver"
+      ],
+      "rollForward": false
+    }
+  }
+}

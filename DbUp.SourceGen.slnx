@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DbUp.SourceGen/DbUp.SourceGen.csproj" />
+    <Project Path="src/SampleApp/SampleApp.csproj" />
+    <Project Path="src/DbUp.SourceGen.Tests/DbUp.SourceGen.Tests.csproj" />
+  </Folder>
+</Solution>
