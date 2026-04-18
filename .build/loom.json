@@ -4,7 +4,7 @@
     "solution": "DbUp.SourceGen.slnx",
     "artifactsPath": ".artifacts",
     "cleanDirectories": [],
-    "enableNugetUpload": false,
+    "enableNugetUpload": true,
     "enableGithubRelease": false,
     "enableVelopackRelease": false
   },
