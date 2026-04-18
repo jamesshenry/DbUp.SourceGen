@@ -40,9 +40,13 @@ public class MyScript : IScript
         var (result, _) = GeneratorTestHelper.RunGenerator(source);
         var generated = GeneratorTestHelper.GetGeneratedSource(result);
         await Assert.That(generated).IsNotNull();
-        await Assert.That(generated).Contains("WithGeneratedScripts_TestAssembly");
+        await Assert
+            .That(generated)
+            .Contains(
+                "internal static UpgradeEngineBuilder WithGeneratedScripts(this UpgradeEngineBuilder builder)"
+            );
         await Assert.That(generated).Contains("new MyScript()");
-        await Assert.That(generated).Contains("\"MyScript.cs\"");
+        await Assert.That(generated).Contains("\"MyScript\"");
     }
 
     [Test]
@@ -214,27 +218,6 @@ public class SimpleScript : IScript
     }
 
     [Test]
-    public async Task Generated_class_name_uses_assembly_name()
-    {
-        var source =
-            @"
-using DbUp;
-using DbUp.Engine;
-
-[assembly: DbUpGenerateScripts]
-
-public class MyScript : IScript
-{
-    public string ProvideScript(System.Func<System.Data.IDbCommand> dbCommandFactory) => ""SELECT 1"";
-}
-";
-        var (result, _) = GeneratorTestHelper.RunGenerator(source);
-        var generated = GeneratorTestHelper.GetGeneratedSource(result);
-        await Assert.That(generated).IsNotNull();
-        await Assert.That(generated).Contains("DbUpGeneratedScripts_TestAssembly");
-    }
-
-    [Test]
     public async Task Namespaced_script_uses_fully_qualified_name()
     {
         var source =
@@ -255,7 +238,7 @@ namespace MyApp.Migrations
         var (result, _) = GeneratorTestHelper.RunGenerator(source);
         var generated = GeneratorTestHelper.GetGeneratedSource(result);
         await Assert.That(generated).IsNotNull();
-        await Assert.That(generated).Contains("\"MyApp.Migrations.Migration001.cs\"");
+        await Assert.That(generated).Contains("\"MyApp.Migrations.Migration001\"");
         await Assert.That(generated).Contains("new MyApp.Migrations.Migration001()");
     }
 
@@ -292,34 +275,6 @@ public class PostDeployScript : IScript
         await Assert.That(attrSource).Contains("DbUpGenerateScriptsAttribute");
         await Assert.That(attrSource).Contains("DbUpScriptAttribute");
         await Assert.That(attrSource).Contains("DbUpScriptType");
-    }
-
-    [Test]
-    public async Task Leading_digit_assembly_name_is_sanitized()
-    {
-        var source =
-            @"
-using DbUp;
-using DbUp.Engine;
-
-[assembly: DbUpGenerateScripts]
-
-public class MyScript : IScript
-{
-    public string ProvideScript(System.Func<System.Data.IDbCommand> dbCommandFactory) => ""SELECT 1"";
-}
-";
-        var (result, output) = GeneratorTestHelper.RunGeneratorWithAssemblyName(
-            source,
-            "123Project"
-        );
-        GeneratorTestHelper.AssertNoCompilationErrors(output);
-
-        var generated = GeneratorTestHelper.GetGeneratedSource(result);
-
-        await Assert.That(generated).IsNotNull();
-        await Assert.That(generated).Contains("DbUpGeneratedScripts__123Project");
-        await Assert.That(generated).Contains("WithGeneratedScripts__123Project");
     }
 
     [Test]
