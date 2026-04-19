@@ -92,31 +92,27 @@ namespace DbUp
                 )
                 .Where(static m => m is not null)!;
 
-            // Get assembly name
-            var assemblyName = context.CompilationProvider.Select(
-                static (c, _) => c.AssemblyName ?? "Unknown"
+            // Get and sanitize the assembly name for use as a namespace
+            var assemblyNamespace = context.CompilationProvider.Select(
+                static (c, _) => SanitizeNamespace(c.AssemblyName ?? "DbUp.Generated")
             );
 
-            // Combine and Dedup earlier
             var combined = scriptClasses
                 .Collect()
                 .Select(static (items, _) => items.Distinct().ToImmutableArray())
                 .Combine(hasMarker)
-                .Combine(assemblyName);
+                .Combine(assemblyNamespace);
 
-            context.RegisterSourceOutput(
+          context.RegisterSourceOutput(
                 combined,
                 static (spc, input) =>
                 {
-                    var inputData = input;
-                    var classes = inputData.Left.Left;
-                    var markerPresent = inputData.Left.Right;
-                    var asmName = inputData.Right;
+                    var classes = input.Left.Left;
+                    var markerPresent = input.Left.Right;
+                    var targetNamespace = input.Right; // This is our sanitized assembly name
 
                     if (!markerPresent)
                         return;
-
-                    var safeName = SanitizeIdentifier(asmName);
 
                     // Report diagnostics for classes without parameterless constructors
                     var validClasses = ImmutableArray.CreateBuilder<ScriptInfo>();
@@ -171,10 +167,10 @@ using DbUp.Builder;
 using DbUp.Engine;
 using DbUp.Support;
 
-namespace DbUp
+namespace {{targetNamespace}}
 {
     /// <summary>
-    /// Source-generated DbUp script registrations for assembly '{{asmName}}'."
+    /// Source-generated DbUp script registrations.
     /// </summary>
     public static class DbUpGeneratedScripts
     {
@@ -209,13 +205,11 @@ namespace DbUp
 }
 """
                     );
-                    spc.AddSource(
-                        "DbUpGeneratedScripts.g.cs",
-                        SourceText.From(sb.ToString(), Encoding.UTF8)
-                    );
+                    spc.AddSource("DbUpGeneratedScripts.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
                 }
             );
         }
+
 
         private static ScriptInfo? GetScriptInfo(GeneratorSyntaxContext context)
         {
@@ -285,6 +279,16 @@ namespace DbUp
             );
         }
 
+        private static string SanitizeNamespace(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return "DbUp.Generated";
+            
+            // Split by dots to preserve the namespace hierarchy, then sanitize each segment
+            var parts = name.Split('.');
+            var sanitizedParts = parts.Select(SanitizeIdentifier);
+            return string.Join(".", sanitizedParts);
+        }
+        
         private static string SanitizeIdentifier(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
