@@ -58,8 +58,8 @@ namespace DbUp
         /// <summary>The script execution type. Defaults to RunOnce.</summary>
         public DbUpScriptType ScriptType { get; set; } = DbUpScriptType.RunOnce;
 
-        /// <summary>The run group order. Scripts are sorted by this value first, then alphabetically by name. Defaults to 0.</summary>
-        public int RunGroupOrder { get; set; } = 0;
+        /// <summary>The run group order. Defaults to 100.</summary>
+        public int RunGroupOrder { get; set; } = 100;
     }
 }
 ";
@@ -103,7 +103,7 @@ namespace DbUp
                 .Combine(hasMarker)
                 .Combine(assemblyNamespace);
 
-          context.RegisterSourceOutput(
+            context.RegisterSourceOutput(
                 combined,
                 static (spc, input) =>
                 {
@@ -148,15 +148,19 @@ namespace DbUp
                         spc.ReportDiagnostic(Diagnostic.Create(NoScriptsFound, Location.None));
                         return;
                     }
-
-                    // Sort alphabetically by fully qualified name for deterministic ordering
                     validClasses.Sort(
                         (a, b) =>
-                            string.Compare(
+                        {
+                            int result = a.RunGroupOrder.CompareTo(b.RunGroupOrder);
+                            if (result != 0)
+                                return result;
+
+                            return string.Compare(
                                 a.FullyQualifiedName,
                                 b.FullyQualifiedName,
-                                System.StringComparison.Ordinal
-                            )
+                                StringComparison.Ordinal
+                            );
+                        }
                     );
 
                     var sb = new StringBuilder();
@@ -177,7 +181,7 @@ namespace {{targetNamespace}}
         /// <summary>
         /// Registers all source-generated IScript implementations with the builder.
         /// </summary>
-        internal static UpgradeEngineBuilder WithGeneratedScripts(this UpgradeEngineBuilder builder)
+        public static UpgradeEngineBuilder WithGeneratedScripts(this UpgradeEngineBuilder builder)
         {
 """
                     );
@@ -205,11 +209,13 @@ namespace {{targetNamespace}}
 }
 """
                     );
-                    spc.AddSource("DbUpGeneratedScripts.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
+                    spc.AddSource(
+                        "DbUpGeneratedScripts.g.cs",
+                        SourceText.From(sb.ToString(), Encoding.UTF8)
+                    );
                 }
             );
         }
-
 
         private static ScriptInfo? GetScriptInfo(GeneratorSyntaxContext context)
         {
@@ -229,7 +235,7 @@ namespace {{targetNamespace}}
 
             // Read [DbUpScript] attribute if present
             var scriptTypeName = "RunOnce";
-            var runGroupOrder = 0;
+            var runGroupOrder = 100;
             var hasNonDefaultOptions = false;
 
             var attr = symbol
@@ -281,14 +287,15 @@ namespace {{targetNamespace}}
 
         private static string SanitizeNamespace(string name)
         {
-            if (string.IsNullOrWhiteSpace(name)) return "DbUp.Generated";
-            
+            if (string.IsNullOrWhiteSpace(name))
+                return "DbUp.Generated";
+
             // Split by dots to preserve the namespace hierarchy, then sanitize each segment
             var parts = name.Split('.');
             var sanitizedParts = parts.Select(SanitizeIdentifier);
             return string.Join(".", sanitizedParts);
         }
-        
+
         private static string SanitizeIdentifier(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
