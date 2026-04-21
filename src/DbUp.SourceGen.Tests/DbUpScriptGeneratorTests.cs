@@ -43,10 +43,35 @@ public class MyScript : IScript
         await Assert
             .That(generated)
             .Contains(
-                "internal static UpgradeEngineBuilder WithGeneratedScripts(this UpgradeEngineBuilder builder)"
+                "public static UpgradeEngineBuilder WithGeneratedScripts(this UpgradeEngineBuilder builder)"
             );
         await Assert.That(generated).Contains("new MyScript()");
         await Assert.That(generated).Contains("\"MyScript\"");
+    }
+
+    [Test]
+    public async Task Generated_namespace_matches_assembly_name()
+    {
+        var source =
+            @"
+using DbUp;
+using DbUp.Engine;
+
+[assembly: DbUpGenerateScripts]
+
+public class MyScript : IScript
+{
+    public string ProvideScript(System.Func<System.Data.IDbCommand> dbCommandFactory) => ""SELECT 1"";
+}
+";
+        var (result, _) = GeneratorTestHelper.RunGeneratorWithAssemblyName(
+            source,
+            "My.Custom.Assembly"
+        );
+        var generated = GeneratorTestHelper.GetGeneratedSource(result);
+
+        await Assert.That(generated).IsNotNull();
+        await Assert.That(generated).Contains("namespace My.Custom.Assembly");
     }
 
     [Test]

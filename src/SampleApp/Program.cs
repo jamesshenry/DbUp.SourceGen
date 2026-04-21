@@ -1,6 +1,6 @@
 ﻿using DbUp;
 using DbUp.Engine;
-using static SqliteExtensions;
+using SampleApp;
 
 [assembly: DbUpGenerateScripts]
 
